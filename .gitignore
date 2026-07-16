@@ -1,0 +1,22 @@
+# Data files - never commit raw data, it's large and belongs in S3/Snowflake, not git
+*.json
+*.csv
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Airflow local runtime state - logs, local db, generated secrets
+airflow_home/
+*.log
+*.cfg
+simple_auth_manager_passwords.json.generated
+
+# macOS
+.DS_Store
+
+# Environment variables / secrets - if you ever add a .env file
+.env
