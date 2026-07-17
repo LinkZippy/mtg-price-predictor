@@ -1,0 +1,16 @@
+-- Warehouse:
+CREATE WAREHOUSE IF NOT EXISTS mtg_wh
+WITH WAREHOUSE_SIZE = "SMALL"
+AUTO_SUSPEND = 60
+AUTO_RESUME = TRUE
+;
+
+--Database:
+CREATE DATABASE IF NOT EXISTS mtg_db
+;
+
+--Schema:
+CREATE SCHEMA IF NOT EXISTS mtg_db.curated
+;
+
+
