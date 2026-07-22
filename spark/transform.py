@@ -105,4 +105,55 @@ df_edhrec.select(
     "is_reserved_list", "edhrec_rank", "price_usd", "log_price_usd"
 ).show(10, truncate=False)
 
+# ---------------------------------------------------------------------------
+# STEP G: Write to Snowflake.
+#
+# We convert to pandas here because the Snowflake Spark connector doesn't
+# yet support Spark 4.x. For ~78k rows this is fine — write_pandas() does
+# a bulk insert under the hood.
+# ---------------------------------------------------------------------------
+from dotenv import load_dotenv
+import os
+from snowflake.connector.pandas_tools import write_pandas
+import snowflake.connector
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
+
+df_final = df_edhrec.select(
+    F.col("oracle_id"),
+    F.col("name"),
+    F.col("set").alias("set_code"),
+    F.col("released_at"),
+    F.col("original_release_date").cast("string"),
+    F.col("printing_age_days"),
+    F.col("is_reserved_list"),
+    F.col("edhrec_rank"),
+    F.col("price_usd"),
+    F.col("log_price_usd"),
+)
+
+pdf = df_final.toPandas()
+pdf.columns = [c.upper() for c in pdf.columns]  # Snowflake expects uppercase column names
+
+conn = snowflake.connector.connect(
+    account=os.environ["SNOWFLAKE_ACCOUNT"],
+    user=os.environ["SNOWFLAKE_USER"],
+    password=os.environ["SNOWFLAKE_PASSWORD"],
+    warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
+    database=os.environ["SNOWFLAKE_DATABASE"],
+    schema=os.environ["SNOWFLAKE_SCHEMA"],
+    role=os.environ["SNOWFLAKE_ROLE"],
+)
+
+success, nchunks, nrows, _ = write_pandas(
+    conn=conn,
+    df=pdf,
+    table_name="CARD_PRICE_FEATURES",
+    database=os.environ["SNOWFLAKE_DATABASE"].upper(),
+    schema=os.environ["SNOWFLAKE_SCHEMA"].upper(),
+    overwrite=True,
+)
+
+print(f"Snowflake write: success={success}, chunks={nchunks}, rows={nrows}")
+conn.close()
 spark.stop()
